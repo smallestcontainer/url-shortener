@@ -1,9 +1,26 @@
 pipeline {
-    agent any
+    agent none
     stages {
-        stage('linting') {
+        stage('Lint') {
+            agent{
+                docker {
+                    image 'ghcr.io/astral-sh/ruff:0.16.7-alpine'
+                    args '--entrypoint='
+                    reuseNode true
+                }
+            }
+            
             steps { 
-                echo 'Linting'
+                sh '''
+                    set +e
+                    ruff format --check --output-format=junit > ruff-format.xml .
+                    ruff check --output-format=junit --output-file=ruff-lint.xml .
+                    exit 0
+                '''
+            }
+
+            post {
+                always { junit allowEmptyResults: true, testResults: 'ruff-format.xml, ruff-lint.xml'}
             }
         }
 
