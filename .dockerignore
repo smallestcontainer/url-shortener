@@ -1,4 +1,8 @@
+.gitignore
+.dockerignore
 .venv
 __pycache__
 .ruff_cache
+*.md
+Jenkinsfile
 compose.yaml
