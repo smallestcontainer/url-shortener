@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from hashids import Hashids
 from pydantic import BaseModel, HttpUrl
 
-
 class Link(BaseModel):
     url: HttpUrl
     ttl_m: int | None = 60

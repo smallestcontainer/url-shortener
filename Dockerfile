@@ -1,12 +1,26 @@
-FROM python:3.14-alpine
+FROM python:3.14-alpine AS base 
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY pyproject.toml ./
 
-RUN pip install -r requirements.txt --no-cache-dir
+COPY src/ src/
 
-COPY --chown=nobody:nobody . .
+
+FROM base AS tests
+
+RUN pip install -e ".[dev]" --no-cache-dir
+
+COPY tests/ tests/
+
+RUN pytest -q
+
+
+FROM base AS run
+
+RUN pip insatll --no-cache-dir .
+
+COPY --chown=nobody:nobody src/ src/
 
 USER nobody
 
