@@ -8,7 +8,7 @@ pipeline {
             agent{
                 docker {
                     image 'ghcr.io/astral-sh/ruff:0.16.7-alpine'
-                    args '--entrypoint='
+                    args '--entrypoint= '
                     reuseNode true
                 }
             }
@@ -47,14 +47,22 @@ pipeline {
             agent {
                 docker {
                     image 'aquasec/trivy:0.74.0'
-                    args '--entrypoint='
+                    args '--entrypoint= ' +
+                        '-v /var/run/docker.sock:/var/run/docker.sock ' +
+                        '--group-add 989 '
                     reuseNode true
                 }
             }
             
             steps {
                 sh '''
-                    trivy image --format template --template "/contrib/junit.tpl" -o trivy.xml ${IMAGE_NAME}:${IMAGE_TAG}
+                    trivy image \
+                        --cache-dir $WORKSPACE/.trivycache \
+                        --format template \
+                        --template "@/contrib/junit.tpl" \
+                        --severity HIGH,CRITICAL \
+                        -o trivy.xml \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
             
