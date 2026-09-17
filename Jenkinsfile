@@ -1,10 +1,9 @@
 pipeline {
-    agent none
+    agent any
     environment {
         IMAGE_NAME = "url-shortener"
     }
     stages {
-        
         stage('Lint') {
             agent{
                 docker {
@@ -39,14 +38,28 @@ pipeline {
                 script {
                     def short_hash = env.GIT_COMMIT.take(7)
                     env.IMAGE_TAG = short_hash
-                    def image = docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "-f Dockerfile .")
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "-f Dockerfile .")
                 }
             }
         }
 
         stage('Image scan') {
+            agent {
+                docker {
+                    image 'aquasec/trivy:0.74.0'
+                    args '--entrypoint='
+                    reuseNode true
+                }
+            }
+            
             steps {
-                echo 'Scanning built image...'
+                sh '''
+                    trivy image --format template --template "/contrib/junit.tpl" -o trivy.xml ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
+            }
+            
+            post {
+                always { junit allowEmptyResults: true, testResults: 'trivy.xml' }
             }
         }
 
