@@ -1,6 +1,10 @@
 pipeline {
     agent none
+    environment {
+        IMAGE_NAME = "url-shortener"
+    }
     stages {
+        
         stage('Lint') {
             agent{
                 docker {
@@ -30,13 +34,17 @@ pipeline {
             }
         }
 
-        stage('bulid') {
+        stage('Build') {
             steps {
-                echo 'Building docker image...'
+                script {
+                    def short_hash = env.GIT_COMMIT.take(7)
+                    env.IMAGE_TAG = short_hash
+                    def image = docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "-f Dockerfile .")
+                }
             }
         }
 
-        stage('image-scan') {
+        stage('Image scan') {
             steps {
                 echo 'Scanning built image...'
             }
