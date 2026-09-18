@@ -52,8 +52,6 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def short_hash = env.GIT_COMMIT.take(7)
-                    env.IMAGE_TAG = short_hash
                     docker.build("${IMAGE_NAME}", "-f Dockerfile .")
                 }
             }
@@ -89,7 +87,12 @@ pipeline {
 
         stage('publish') {
             steps {
-                echo 'Publishing image...'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
+                        img = docker.build("${IMAGE_NAME}")
+                        img.push()
+                    }
+                }
             }
         }
     }

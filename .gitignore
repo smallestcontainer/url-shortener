@@ -3,3 +3,4 @@ __pycache__
 .ruff_cache
 compose.yaml
 **/*.egg-info
+.pytest_cache
