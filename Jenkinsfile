@@ -1,7 +1,9 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "url-shortener"
+        IMAGE_NAME = "url-shortener:${env.GIT_COMMIT.take(7)}"
+        PYTEST_IMAGE_NAME = "${IMAGE_NAME}-test"
+        PYTEST_CONTAINER_NAME = "pytest-ci"
     }
     stages {
         stage('Lint') {
@@ -27,9 +29,23 @@ pipeline {
             }
         }
 
-        stage('tests') {
+        stage('Pytest') {
             steps {
-                echo 'Running pytest tests...'
+                script {
+                    docker.build("${env.PYTEST_IMAGE_NAME}", "-f Dockerfile --target tests .")
+                    sh """
+                    docker run \
+                        --name ${env.PYTEST_CONTAINER_NAME} \
+                        ${env.PYTEST_IMAGE_NAME} \
+                        pytest -q --junitxml=/app/results.xml
+                    docker cp ${env.PYTEST_CONTAINER_NAME}:/app/results.xml pytest.xml
+                    """
+                }
+            }
+
+            post {
+                always { junit testResults: 'pytest.xml'}
+                cleanup { sh "docker container rm ${env.PYTEST_CONTAINER_NAME}" }
             }
         }
 
@@ -38,7 +54,7 @@ pipeline {
                 script {
                     def short_hash = env.GIT_COMMIT.take(7)
                     env.IMAGE_TAG = short_hash
-                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "-f Dockerfile .")
+                    docker.build("${IMAGE_NAME}", "-f Dockerfile .")
                 }
             }
         }
@@ -62,7 +78,7 @@ pipeline {
                         --template "@/contrib/junit.tpl" \
                         --severity HIGH,CRITICAL \
                         -o trivy.xml \
-                        ${IMAGE_NAME}:${IMAGE_TAG}
+                        ${IMAGE_NAME}
                 '''
             }
             

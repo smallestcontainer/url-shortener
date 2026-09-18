@@ -13,12 +13,10 @@ RUN pip install -e ".[dev]" --no-cache-dir
 
 COPY tests/ tests/
 
-RUN pytest -q
-
 
 FROM base AS run
 
-RUN pip insatll --no-cache-dir .
+RUN pip install --no-cache-dir .
 
 COPY --chown=nobody:nobody src/ src/
 
