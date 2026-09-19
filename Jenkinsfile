@@ -1,9 +1,12 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "url-shortener:${env.GIT_COMMIT.take(7)}"
-        PYTEST_IMAGE_NAME = "${IMAGE_NAME}-test"
-        PYTEST_CONTAINER_NAME = "pytest-ci"
+        IMAGE_REPO = "url-shortener"
+        IMAGE_TAG = "${env.GIT_COMMIT.take(7)}"
+        IMAGE_NAME = "${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${IMAGE_TAG}"
+
+        PYTEST_IMAGE_NAME = "${IMAGE_NAME}-pytest"
+        PYTEST_CONTAINER_NAME = "pytest-${IMAGE_REPO}-${IMAGE_TAG}"
     }
     stages {
         stage('Lint') {
@@ -45,7 +48,9 @@ pipeline {
 
             post {
                 always { junit testResults: 'pytest.xml'}
-                cleanup { sh "docker container rm ${env.PYTEST_CONTAINER_NAME}" }
+                cleanup { 
+                    sh "docker container rm ${PYTEST_CONTAINER_NAME} && docker rmi ${PYTEST_IMAGE_NAME}"  
+                }
             }
         }
 
@@ -86,14 +91,21 @@ pipeline {
         }
 
         stage('publish') {
+            when {
+                branch 'master'
+            }
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-                        img = docker.build("${IMAGE_NAME}")
-                        img.push()
+                        docker.image("${IMAGE_NAME}").push("${IMAGE_TAG}")
                     }
                 }
             }
         }
     }
+    post {
+            cleanup {
+                sh "docker rmi ${IMAGE_NAME}"
+            }
+        }
 }
