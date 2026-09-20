@@ -1,5 +1,5 @@
 import pytest
-from shortener.encoder import Encoder
+from encoder import Encoder
 
 
 @pytest.fixture
