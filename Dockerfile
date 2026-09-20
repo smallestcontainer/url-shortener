@@ -1,5 +1,7 @@
 FROM python:3.14-alpine AS base 
 
+RUN pip install setuptools==84.0.0 msgpack==1.2.1
+
 WORKDIR /app
 
 COPY requirements.txt .
