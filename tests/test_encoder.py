@@ -1,4 +1,5 @@
 import pytest
+
 from encoder import Encoder
 
 
