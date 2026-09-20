@@ -2,24 +2,28 @@ FROM python:3.14-alpine AS base
 
 WORKDIR /app
 
-COPY pyproject.toml ./
+COPY requirements.txt .
 
-RUN pip install --no-cache-dir .
+COPY pyproject.toml .
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ src/
 
 
 FROM base AS tests
 
-RUN pip install -e ".[dev]" --no-cache-dir
+COPY requirements-dev.txt .
+
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY tests/ tests/
 
 
 FROM base AS run
 
-COPY --chown=nobody:nobody src/ src/
+RUN chown nobody:nobody src 
 
 USER nobody
 
-CMD [ "fastapi", "run", "main.py"]
+CMD [ "fastapi", "run", "src/main.py"]

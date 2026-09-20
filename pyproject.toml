@@ -1,12 +1,6 @@
 [project]
 name = "shortener"
 version = "0.0.0"
-dependencies = [
-    "fastapi[standard]",
-    "hashids",
-    "pydantic",
-    "msgpack>=1.2.1"
-]
 
 [project.optional-dependencies]
 dev = [ "pytest" ]
