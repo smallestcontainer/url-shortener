@@ -1,12 +1,9 @@
-FROM python:3.14-alpine AS base 
-
-RUN pip install setuptools==84.0.0 msgpack==1.2.1
+FROM python:3.15.2-slim AS base 
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-COPY pyproject.toml .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -24,7 +21,7 @@ COPY tests/ tests/
 
 FROM base AS run
 
-RUN chown nobody:nobody src 
+RUN chown nobody:nogroup src 
 
 USER nobody
 
