@@ -4,9 +4,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -U pip && 
-    pip uninstall -y setuptools && 
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -U pip
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ src/
 
@@ -23,6 +23,8 @@ COPY tests/ tests/
 
 
 FROM base AS run
+
+RUN pip uninstall -y pip
 
 RUN chown nobody:nogroup src 
 
