@@ -102,8 +102,39 @@ pipeline {
                 }
             }
         }
+        
+        stage('image tag bump') {
+            when {
+                branch 'master'
+            }
+            agent {
+                docker {
+                    image 'registry.k8s.io/kustomize/kustomize:v5.4.3'
+                    args '--entrypoint='
+                    reuseNode true
+                }
+            }   
+
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-app',
+                                          usernameVariable: 'GH_APP',
+                                          passwordVariable: 'GH_TOKEN')]) {
+                    sh '''
+                        rm -rf k3d-gitops
+                        git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/smallestcontainer/k3d-gitops.git" k3d-gitops
+                        cd k3d-gitops
+                        kustomize edit set image "${IMAGE_NAME}"
+                        git add kustomization.yaml
+                        git diff --cached --quiet && { echo "Tag ${IMAGE_TAG} already deployed"; exit 0; }
+                        git -c user.name=jenkins -c user.email=jenkins@localhost \
+                            commit -m "deploy url-shortener ${IMAGE_TAG}"
+                        git push origin HEAD:master
+                    '''
+                }
+            }
+        }
     }
-    
+
     post {
         cleanup {
             sh "docker rmi ${IMAGE_NAME}"
