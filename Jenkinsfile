@@ -74,7 +74,7 @@ pipeline {
             }
             
             steps {
-                sh '''
+                sh """
                     trivy image \
                         --cache-dir $WORKSPACE/.trivycache \
                         --format template \
@@ -82,7 +82,7 @@ pipeline {
                         --severity HIGH,CRITICAL \
                         -o trivy.xml \
                         ${IMAGE_NAME}
-                '''
+                """
             }
             
             post {
@@ -103,9 +103,10 @@ pipeline {
             }
         }
     }
+    
     post {
-            cleanup {
-                sh "docker rmi ${IMAGE_NAME}"
-            }
+        cleanup {
+            sh "docker rmi ${IMAGE_NAME}"
         }
+    }
 }
