@@ -6,3 +6,4 @@ __pycache__
 *.md
 Jenkinsfile
 compose.yaml
+**/*.egg-info

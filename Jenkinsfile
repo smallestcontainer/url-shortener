@@ -1,7 +1,12 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "url-shortener"
+        IMAGE_REPO = "url-shortener"
+        IMAGE_TAG = "${env.GIT_COMMIT.take(7)}"
+        IMAGE_NAME = "${DOCKERHUB_USERNAME}/${IMAGE_REPO}:${IMAGE_TAG}"
+
+        PYTEST_IMAGE_NAME = "${IMAGE_NAME}-pytest"
+        PYTEST_CONTAINER_NAME = "pytest-${IMAGE_REPO}-${IMAGE_TAG}"
     }
     stages {
         stage('Lint') {
@@ -27,18 +32,32 @@ pipeline {
             }
         }
 
-        stage('tests') {
+        stage('Pytest') {
             steps {
-                echo 'Running pytest tests...'
+                script {
+                    docker.build("${env.PYTEST_IMAGE_NAME}", "-f Dockerfile --target tests .")
+                    sh """
+                    docker run \
+                        --name ${env.PYTEST_CONTAINER_NAME} \
+                        ${env.PYTEST_IMAGE_NAME} \
+                        pytest -q --junitxml=/app/results.xml
+                    docker cp ${env.PYTEST_CONTAINER_NAME}:/app/results.xml pytest.xml
+                    """
+                }
+            }
+
+            post {
+                always { junit testResults: 'pytest.xml'}
+                cleanup { 
+                    sh "docker container rm ${PYTEST_CONTAINER_NAME} && docker rmi ${PYTEST_IMAGE_NAME}"  
+                }
             }
         }
 
         stage('Build') {
             steps {
                 script {
-                    def short_hash = env.GIT_COMMIT.take(7)
-                    env.IMAGE_TAG = short_hash
-                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}", "-f Dockerfile .")
+                    docker.build("${IMAGE_NAME}", "-f Dockerfile .")
                 }
             }
         }
@@ -55,15 +74,15 @@ pipeline {
             }
             
             steps {
-                sh '''
+                sh """
                     trivy image \
                         --cache-dir $WORKSPACE/.trivycache \
                         --format template \
                         --template "@/contrib/junit.tpl" \
                         --severity HIGH,CRITICAL \
                         -o trivy.xml \
-                        ${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                        ${IMAGE_NAME}
+                """
             }
             
             post {
@@ -72,9 +91,22 @@ pipeline {
         }
 
         stage('publish') {
-            steps {
-                echo 'Publishing image...'
+            when {
+                branch 'master'
             }
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
+                        docker.image("${IMAGE_NAME}").push("${IMAGE_TAG}")
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        cleanup {
+            sh "docker rmi ${IMAGE_NAME}"
         }
     }
 }

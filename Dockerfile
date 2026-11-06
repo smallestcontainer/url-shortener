@@ -1,13 +1,33 @@
-FROM python:3.14-alpine
+FROM python:3.15-alpine AS base 
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install -r requirements.txt --no-cache-dir
+RUN pip install --no-cache-dir -U pip
 
-COPY --chown=nobody:nobody . .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ src/
+
+
+FROM base AS tests
+
+COPY requirements-dev.txt .
+
+COPY pytest.ini . 
+
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY tests/ tests/
+
+
+FROM base AS run
+
+RUN pip uninstall -y pip
+
+RUN chown nobody:nogroup src 
 
 USER nobody
 
-CMD [ "fastapi", "run", "main.py"]
+CMD [ "fastapi", "run", "src/main.py"]

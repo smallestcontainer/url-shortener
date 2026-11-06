@@ -18,7 +18,7 @@ url_id = 0
 
 @app.get("/{hash}")
 def get_url_by_hash(hash: str):
-    if not hash in links:
+    if hash not in links:
         raise HTTPException(status_code=404, detail="Item not found")
 
     return {"url": f"{links[hash]}"}
