@@ -4,8 +4,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -U pip && 
+    pip uninstall -y setuptools && 
+    pip install --no-cache-dir -r requirements.txt
 
 COPY src/ src/
 
