@@ -92,7 +92,7 @@ pipeline {
 
         stage('publish') {
             when {
-                branch 'bumping_tag'
+                branch 'master'
             }
             steps {
                 script {
@@ -105,7 +105,7 @@ pipeline {
         
         stage('image tag bump') {
             when {
-                branch 'bumping_tag'
+                branch 'master'
             }
             agent {
                 docker {
